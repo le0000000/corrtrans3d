@@ -1,2 +1,4 @@
 LIBRARY	"MatlabInterface"
 	EXPORTS computeGeodesic;
+	EXPORTS reduceMesh;
+

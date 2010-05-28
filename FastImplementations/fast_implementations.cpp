@@ -1,33 +1,11 @@
 #include <cmath>
-#include <fstream>
-#include <utility>
 #include <set>
 #include <vector>
-#include <queue>
 
-#include <boost/graph/adjacency_list.hpp>
-#include <boost/graph/dijkstra_shortest_paths.hpp>
+#include "djkstra.h"
+#include "MeshReduce/progmesh.h"
 
 using namespace std;
-using namespace boost;
-
-/**
- * Edge - sorted pair of vertices.
- */
-class Edge : public std::pair<int, int> {
-public:
-	Edge() {}
-	Edge(int v1, int v2) : std::pair<int, int>(v1, v2) {
-		if (first > second) {
-			std::swap(first, second);
-		}
-	}
-
-	// compares lexicographically
-	bool operator<(const Edge& other) const {
-		return *(long long*)this < *(long long*)&other;
-	}
-};
 
 struct Vertex {
 	double x;
@@ -71,23 +49,15 @@ void __stdcall computeGeodesic(double* distances, const double* vertices,
 		weights[i] = Vertex::distance(vs[it->first], vs[it->second]);
 	}
 
-	// define a type for undirected weighted graph
-	typedef adjacency_list < listS, vecS, undirectedS,
-		no_property, property < edge_weight_t, double > > graph_t;
+	djkstra(edges, weights, nvertices, distances);
+}
 
-	// create a graph from the edges list and weights list
-	graph_t g(edges.begin(), edges.end(), weights.begin(), nvertices);
+int __stdcall reduceMesh(double* vertices, int* faces, int nvertices, int nfaces, int reducedVertices)
+{
+	using namespace MeshReduce;
 
-	// array to hold the shortest distances
-	std::vector<double> dist(nvertices);
+	Vertex* vs = (Vertex*)vertices;
+	Face* fs = (Face*)faces;
 
-	// for each vertex...
-	for (i = 0; i < nvertices; ++i) {
-		// run dijkstra
-		dijkstra_shortest_paths(g, vertex(i, g), distance_map(&dist[0]));
-
-		// copy the shortest paths to i'th row of the result matrix
-		std::copy(dist.begin(), dist.end(), distances + i * nvertices);
-	}
 
 }
