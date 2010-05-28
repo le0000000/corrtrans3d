@@ -41,3 +41,13 @@ Mesh::Mesh(const std::string& smfFilename) {
 	fclose(file);
 
 }
+
+void Mesh::save( const std::string& smfFilename )
+{
+//	ofstream file(smfFilename.c_str());
+
+	for (size_t i = 0; i < m_vertices.size(); ++i) {
+		// file << "v " << m_vertices[i].x << " " << m_vertices[i].y << " " << m_vertices[i].z << " ";
+		
+	}
+}

@@ -12,6 +12,8 @@ public:
 
 	Mesh(const std::string& smfFilename);
 
+	void save(const std::string& smfFilename);
+
 	struct Vertex {
 		Vertex() {}
 		Vertex(double x_, double y_, double z_)

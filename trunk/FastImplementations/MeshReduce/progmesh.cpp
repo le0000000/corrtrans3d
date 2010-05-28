@@ -309,4 +309,12 @@ void ProgressiveMesh(List<Vector> &vert, List<tridata> &tri,
 	// according to the returned "permutation".
 }
 
+int MapVertex(int a,int mx, List<int>& collapse_map) {
+	if(mx<=0) return 0;
+	while(a>=mx) {  
+		a=collapse_map[a];
+	}
+	return a;
+}
+
 }

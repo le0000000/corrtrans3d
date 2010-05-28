@@ -23,6 +23,7 @@ function [W] = constructWeights(X, F, depth)
 				neighbors = union(neighbors, find(adj(v, :)));
 			end
 		end
+		
 		% remove initial vertex
 		neighbors = setdiff(neighbors, [i]);
 		
