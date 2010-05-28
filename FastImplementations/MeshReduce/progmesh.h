@@ -23,6 +23,9 @@
 
 namespace MeshReduce {
 
+
+	int MapVertex(int a,int mx, List<int>& collapse_map);
+
 	class tridata {
 	  public:
 		int	v[3];  // indices to vertex list
