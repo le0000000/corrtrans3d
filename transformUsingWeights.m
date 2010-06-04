@@ -14,15 +14,10 @@ function [mesh_out] = transformUsingWeights(mesh_in, depth)
 	
 	% we should use something more effecient, since we need only 4 lowest values
 	[U L T] = svd(W - eye(n));
-
+	
 	% note that smallest singular value is 0, and corresponding singular vector is [1 1 1 ... 1]
 	% this is because all solutions are invariant to translation
-	
-	% take 4 smallest singular vectors
-	kernel = T(:, n-4:n-1);
-	% project original coordinates onto the "kernel"
-	mesh_out.vertices = kernel * kernel' * X;
-
+	mesh_out.vertices = T(:, n-3:n-1);
 	mesh_out.faces = F;
 
 	% scale the mesh for better view
