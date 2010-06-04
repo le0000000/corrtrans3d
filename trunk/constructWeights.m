@@ -23,34 +23,55 @@ function [W] = constructWeights(X, F, depth)
 				neighbors = union(neighbors, find(adj(v, :)));
 			end
 		end
+
+		[neighborsX, neighborsF] = submesh(X, F, neighbors); % mesh of current vertex's neighbors
+		neighborsI = find(neighbors == i); % new index of the current vertex
 		
+		neighborsMesh.vertices = neighborsX;
+		neighborsMesh.faces = neighborsF;
+		
+		flattedNeighborsMesh = transformUsingSE(neighborsMesh);
+		
+		% get coordinates of all vertices except of current one
+		flattedX = flattedNeighborsMesh.vertices(setdiff(1:length(neighbors), [neighborsI]), :);
+		% get coordinates of current verte
+		flattedI = flattedNeighborsMesh.vertices(neighborsI, :);
+		
+		W(i, setdiff(neighbors, [i])) = calculateWeights(flattedX, flattedI);
+
 		% remove initial vertex
-		neighbors = setdiff(neighbors, [i]);
+		% neighbors = setdiff(neighbors, [i]);
 		
 		% perform PCA on the neighbors to find principal axes
-		[U D T] = svd(X(neighbors,:));
+		%[U D T] = svd(X(neighbors,:));
 		
 		% project neighbors' coordinates on two major axes
-		newNeighborsX = X(neighbors,:) * T(:,1:2);
+		%newNeighborsX = X(neighbors,:) * T(:,1:2);
 		% project initial vertex as well
-		newI = X(i,:) * T(:,1:2);
+		%newI = X(i,:) * T(:,1:2);
 		
-		% construct linear system for determining the weights:
-		% x1 x2 x3 ... xn  |  x'
-		% y1 y2 y3 ... yn  |  y'
-		% z1 z2 z3 ... zn  |  z'
-		% 1  1  1  ... 1   |  1
-		A = [newNeighborsX'; ones(1, length(neighbors))];
-		b = [newI'; 1];
-		
-		% minimal solution is better because it will guarantee that weights will be
-		% distributed more equally between the neighbors
-		% (Regular x = A \ b, will generally assign 0 to most weights)
-		w = minimalSolution(A, b);
-		%w = A \ b;
-		
-		W(i, neighbors) = w;
+		%W(i, neighbors) = calculateWeights(newNeighborsX, newI);
 	end
+
+function [w] = calculateWeights(X, p)
+% finds weights such that:
+%	p == w' * X
+% and:
+%	sum(w) == 1
+%
+
+	% construct linear system for determining the weights:
+	% x1 x2 x3 ... xn  |  x'
+	% y1 y2 y3 ... yn  |  y'
+	% z1 z2 z3 ... zn  |  z'
+	% 1  1  1  ... 1   |  1
+	A = [X'; ones(1, size(X, 1))];
+	b = [p'; 1];
+	
+	% minimal solution is better because it will guarantee that weights will be
+	% distributed more equally between the neighbors
+	% (Regular x = A \ b, will generally assign 0 to most weights)
+	w = minimalSolution(A, b);
 	
 %
 % This function returns solution with minimal L2 norm for Ax = b system.
