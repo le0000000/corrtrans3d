@@ -59,12 +59,15 @@ int __stdcall reduceMesh(double* vertices, int* faces, int nvertices, int nfaces
 	Vertex* vs = (Vertex*)vertices;
 	Face* fs = (Face*)faces;
 
+	// prepare input for ProgressiveMesh
 	List<Vector> verticesList;
 	List<tridata> facesList;
-
+	
+	// prepare vertices list
 	for (int i = 0; i < nvertices; ++i) {
 		verticesList.Add(Vector((float)vs[i].x, (float)vs[i].y, (float)vs[i].z));
 	}
+	// prepare faces list (and covert indexes from 1-based to 0-based)
 	for (int i = 0; i < nfaces; ++i) {
 		tridata face;
 		face.v[0] = fs[i].v1 - 1;
@@ -73,30 +76,38 @@ int __stdcall reduceMesh(double* vertices, int* faces, int nvertices, int nfaces
 		facesList.Add(face);
 	}
 
+	// results storage
 	List<int> collapse_map;
 	List<int> permutation;
 
+	// apply the reduction alrogithm
 	ProgressiveMesh(verticesList, facesList, collapse_map, permutation);
 
+	// reorder vertices according to the returned permutation
 	std::vector<Vertex> tmpVertices(vs, vs + nvertices);
 	for (int i = 0; i < nvertices; ++i) {
 		vs[permutation[i]] = tmpVertices[i];
 	}
+	// update faces to use new vertices' order
 	for (int i = 0; i < nfaces * 3; ++i) {
 		faces[i] = permutation[faces[i] - 1];
 	}
 
+	// create new faces based on new vertices
 	int currentFace = 0;
 	for (int i = 0; i < nfaces; ++i) {
 		Face newFace;
+		// map face's vertices to the range [0..nReducedVertices-1]
 		newFace.v1 = MapVertex(fs[i].v1, nReducedVertices, collapse_map);
 		newFace.v2 = MapVertex(fs[i].v2, nReducedVertices, collapse_map);
 		newFace.v3 = MapVertex(fs[i].v3, nReducedVertices, collapse_map);
 
+		// if any two vertices of the face are the same vertex now - discard the face
 		if (newFace.v1 == newFace.v2 || newFace.v2 == newFace.v3 || newFace.v3 == newFace.v1) {
 			continue;
 		}
 
+		// copy the new face (and covert indexes from 0-based to 1-based)
 		fs[currentFace].v1 = newFace.v1 + 1;
 		fs[currentFace].v2 = newFace.v2 + 1;
 		fs[currentFace].v3 = newFace.v3 + 1;
