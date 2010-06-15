@@ -13,7 +13,11 @@
 function [E, D] = eig_s(A, opt, k)
 
 % get eigenvectors and eigenvalues unsorted
-[Eu, D] = eigs(A, k);
+
+% pass options struct to indicate 0 level diagnostic output
+opt_struct = struct('disp', 0);
+% absence of sigma requires to return K largest eigenvalues, so by default sigma can be 'LM' - largest magnitude
+[Eu, D] = eigs(A, k, 'LM', opt_struct);
 
 d = diag(D);
 [ds, p] = sort(d);

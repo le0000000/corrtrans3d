@@ -4,12 +4,12 @@ function [mesh_out] = transformUsingSE(mesh_in)
 	F = mesh_in.faces;
 	X = mesh_in.vertices;
 
-    disp('Computing geodesic distances');
+    %disp('Computing geodesic distances');
 
     % Compute approximate geodesic distances (using graph distances)
 	A = computeGeodesicMetric(X, F);
 
-	disp('Computing spectral embedding');
+	%disp('Computing spectral embedding');
 
     % Apply Gaussian to distance matrices
     G = applyGaussian(A);
