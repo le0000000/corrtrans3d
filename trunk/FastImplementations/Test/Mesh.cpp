@@ -31,6 +31,9 @@ Mesh::Mesh(const std::string& smfFilename) {
 		} else if (line[0] == 'f') {
 			Face f;
 			tokenize(line + 2, f.vertices, 3, atoi);
+			f.vertices[0]--;
+			f.vertices[1]--;
+			f.vertices[2]--;
 			m_faces.push_back(f);
 		}
 
