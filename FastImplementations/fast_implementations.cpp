@@ -1,9 +1,19 @@
+#include <Windows.h>
+
 #include <cmath>
 #include <set>
 #include <vector>
+#include <iostream>
 
-#include "djkstra.h"
+#include "math/eigs.h"
+#include "Mesh.h"
 #include "MeshReduce/progmesh.h"
+
+#include "SpectralEmbedding.h"
+#include "WeightsComputation.h"
+
+sparse_matrix_t g_sparseMatrix;
+
 
 using namespace std;
 
@@ -20,36 +30,28 @@ struct Vertex {
 	}
 };
 
-struct Face {
-	int v1;
-	int v2;
-	int v3;
-};
 
+BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD reason, LPVOID reserved) {
+	if (reason == DLL_PROCESS_ATTACH) {
+		std::string filename(256, '\0');
+		GetModuleFileNameA(hinstDLL, &filename[0], filename.size());
+		size_t parentDirEnd = filename.rfind('\\', filename.rfind('\\') - 1);
+		filename.resize(parentDirEnd);
+		SetDllDirectoryA(filename.c_str());
+
+		cout << filename << endl;
+	}
+	return TRUE;
+}
 
 void __stdcall computeGeodesic(double* distances, const double* vertices, 
 								 const int* faces, int nvertices, int nfaces)
 {
-	Vertex* vs = (Vertex*)vertices;
-	Face* fs = (Face*)faces;
+	Mesh m((const Coordinate*)vertices, nvertices, (const Face*)faces, nfaces);
 
-	// extract edges from faces
-	std::set<Edge> edges;
-	for (int i = 0; i < nfaces; ++i) {
-		// note that vertices are given as 1..nvertex and not 0..nvertex-1
-		edges.insert(Edge(fs[i].v1 - 1, fs[i].v2 - 1));
-		edges.insert(Edge(fs[i].v2 - 1, fs[i].v3 - 1));
-		edges.insert(Edge(fs[i].v3 - 1, fs[i].v1 - 1));
+	for (int i = 0; i < nvertices; ++i) {
+		m.computeGeodesicDistances(i, distances + i * nvertices);
 	}
-
-	// calculate weights for edges
-	std::vector<double> weights(edges.size());
-	int i = 0;
-	for (std::set<Edge>::const_iterator it = edges.begin(); it != edges.end(); ++it, ++i) {
-		weights[i] = Vertex::distance(vs[it->first], vs[it->second]);
-	}
-
-	djkstra(edges, weights, nvertices, distances);
 }
 
 static void prepareLists(const Vertex* vs, int nvertices, const Face* fs, int nfaces,
@@ -147,4 +149,69 @@ int __stdcall reduceMesh(double* vertices, int* faces, int nvertices, int nfaces
 	}
 
 	return currentFace;
+}
+
+void __stdcall cEigs(double* vecs, double* vals, const double* matrix, int n, int k) {
+
+	namespace ublas = boost::numeric::ublas;
+
+	ublas::matrix<double, ublas::column_major> m(n ,n);
+	std::copy(matrix, matrix + n * n, &m(0, 0));
+
+	ublas::matrix<double, ublas::column_major> vc(n, k);
+	ublas::vector<double> vl(k);
+
+	//cout << "Calling eigs" << endl;
+	eigs(vc, vl, m, k);
+	//cout << "After eigs" << endl;
+
+	std::copy(&vc(0, 0), (&vc(0, 0)) + n * k, vecs);
+	std::copy(vl.begin(), vl.end(), vals);
+}
+
+void __stdcall computeSpectralEmbedding(double* outVertices, const double* vertices,
+										const int* faces, int nvertices, int nfaces)
+{
+	Mesh m((const Coordinate*)vertices, nvertices, (const Face*)faces, nfaces);
+	spectralEmbedding(m, (Coordinate*)outVertices);
+}
+
+int __stdcall constructWeights(const double* vertices, const int* faces,
+							   int nvertices, int nfaces, int depth, int methodId)
+{
+	process_neighbors_f op = NULL;
+	switch (methodId) {
+		case 0:
+			op = WeightsComputation::noProcessing;
+			break;
+		case 1:
+			op = WeightsComputation::pcaProcessing;
+			break;
+		case 2:
+			op = WeightsComputation::geodesicProcessing;
+			break;
+	}
+
+	Mesh m((const Coordinate*)vertices, nvertices, (const Face*)faces, nfaces);
+	computeMeshWeights(m, depth, op, g_sparseMatrix);
+
+	return g_sparseMatrix.nnz();
+}
+
+void __stdcall getLastSparseMatrix(int* rowIndices, int* colIndices, double* values, int* m, int* n) {
+	size_t nnz = g_sparseMatrix.nnz();
+	size_t ncols = g_sparseMatrix.size2();
+
+	const sparse_matrix_t::index_array_type& colsBases = g_sparseMatrix.index1_data();
+	const sparse_matrix_t::index_array_type& rows = g_sparseMatrix.index2_data();
+	const sparse_matrix_t::value_array_type& vals = g_sparseMatrix.value_data();
+
+	std::copy(rows.begin(), rows.begin() + nnz, rowIndices);
+	for (size_t i = 0; i < ncols; ++i) {
+		std::fill(colIndices + colsBases[i], colIndices + colsBases[i + 1], i);
+	}
+	std::copy(vals.begin(), vals.begin() + nnz, values);
+
+	*m = g_sparseMatrix.size1();
+	*n = g_sparseMatrix.size2();
 }

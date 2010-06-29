@@ -1,4 +1,8 @@
-LIBRARY	"MatlabInterface"
+LIBRARY	"FastImplementations"
 	EXPORTS computeGeodesic;
 	EXPORTS reduceMesh;
 	EXPORTS findKeyVertices;
+	EXPORTS cEigs;
+	EXPORTS computeSpectralEmbedding;
+	EXPORTS constructWeights;
+	EXPORTS getLastSparseMatrix;
