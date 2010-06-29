@@ -4,5 +4,5 @@ function [A] = computeGeodesicMetric(X, F)
 		loadlibrary('FastImplementations\Release\FastImplementations.dll', 'FastImplementations\fast_implementations.h');
 	end
 	
-	A = calllib('FastImplementations', 'computeGeodesic', zeros(size(X, 1)), X', F', size(X, 1), size(F, 1));
+	A = calllib('FastImplementations', 'computeGeodesic', zeros(size(X, 1)), X', F' - 1, size(X, 1), size(F, 1));
 	
