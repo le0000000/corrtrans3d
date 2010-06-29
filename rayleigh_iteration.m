@@ -8,7 +8,7 @@ function [e_vector, e_value] = rayleigh_iteration(A, mu_0, v_0, epsilon)
 
 % normalize v_0
 % v_i and mu_i are the vectors of the previous iteration
-v_i = v_0 ./ (v_0' * v_0);
+v_i = v_0 ./ norm(v_0); % (v_0' * v_0);
 mu_i = mu_0;
 
 n = size(A, 1);

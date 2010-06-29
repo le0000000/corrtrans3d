@@ -73,13 +73,3 @@ function [w] = calculateWeights(X, p)
 	% (Regular x = A \ b, will generally assign 0 to most weights)
 	w = minimalSolution(A, b);
 	
-%
-% This function returns solution with minimal L2 norm for Ax = b system.
-%
-% Algorithm: obtain arbitrary solution vector and make it orthogonal to kernel of A
-%
-function [x] = minimalSolution(A, b)
-	
-	sol = A \ b;
-	kernel = null(A);
-	x = sol - sum(kernel * diag(sol' * kernel), 2);
