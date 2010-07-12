@@ -9,6 +9,7 @@ function [out] = reduceMesh(mesh, nNewVertices)
 	
 	[nNewFaces newX newF] = calllib('FastImplementations', 'reduceMesh', X', F', size(X, 1), size(F, 1), nNewVertices);
 	
-	out.vertices = newX(:, 1:nNewVertices)';
+    % turns out that the order of fields is important...
 	out.faces = newF(:, 1:nNewFaces)';
+    out.vertices = newX(:, 1:nNewVertices)';
 		
