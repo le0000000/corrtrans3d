@@ -39,3 +39,13 @@ Danny's method using weights:
 >> out_m = transformUsingWeights(m, 3);
 ...
 >> mesh_show(out_m)
+
+
+
+volume correction:
+
+>> [volumes, opposites] = voxelate(original_model, depth);
+>> changed_model = ...
+>> out_model = volume_correction(changed_model, volumes, opposites, depth, rounds);
+>> mesh_show(out_model);
+

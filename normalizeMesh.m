@@ -1,5 +1,5 @@
 function [out_mesh] = normalizeMesh(m)
-
+% Normalizes the mesh vectors' coordinates to [-1,1] range.
 l = min(m.vertices);
 u = max(m.vertices);
 
