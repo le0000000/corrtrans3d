@@ -2,10 +2,14 @@
 
 #include <vector>
 #include <algorithm>
+#include <iterator>
 #include <iostream>
+#include <fstream>
 
 #include <boost/numeric/ublas/matrix_proxy.hpp>
+#include <boost/numeric/ublas/io.hpp>
 
+#include "math/svd.h"
 #include "math/pinv.h"
 #include "SpectralEmbedding.h"
 
@@ -27,6 +31,48 @@ namespace WeightsComputation {
 
 	void pcaProcessing(const Mesh& mesh, const std::vector<int>& neighbors, matrix_t& newCoordinates) {
 
+		using namespace ublas;
+
+		static vector_t newSourceCoords;
+		static matrix_t newNeighborsCoords;
+		static matrix_t neighborsCoords;
+		static vector_t sourceCoords;
+		static matrix_t svdInput;
+		static matrix_t u, vt; // for svd output
+		static vector_t s;
+
+		neighborsCoords.resize(neighbors.size() - 1, 3);
+		for (size_t i = 1; i < neighbors.size(); ++i) {
+			const Coordinate& c = mesh.vertex(neighbors[i]);
+			neighborsCoords(i - 1, 0) = c.x;
+			neighborsCoords(i - 1, 1) = c.y;
+			neighborsCoords(i - 1, 2) = c.z;
+		}
+		
+		const Coordinate& c = mesh.vertex(neighbors[0]);
+		sourceCoords.resize(3);
+		sourceCoords(0) = c.x;
+		sourceCoords(1) = c.y;
+		sourceCoords(2) = c.z;
+
+		// required since svd destroys contents of the input matrix
+		svdInput = neighborsCoords; 
+
+		svd(svdInput, u, s, vt);
+
+		vt.resize(2, vt.size2());
+		vt = ublas::trans(vt);
+
+		newNeighborsCoords = ublas::prod(neighborsCoords, vt);
+		newSourceCoords = ublas::prod(sourceCoords, vt);
+
+		newCoordinates.resize(neighbors.size(), 2);
+		for (size_t i = 0; i < newCoordinates.size2(); ++i) {
+			ublas::matrix_column<matrix_t> col = ublas::column(newNeighborsCoords, i);
+			std::copy(col.begin(), col.end(), ublas::column(newCoordinates, i).begin() + 1);
+			newCoordinates(0, i) = newSourceCoords(i);
+		}
+
 	}
 
 	void geodesicProcessing(const Mesh& mesh, const std::vector<int>& neighbors, matrix_t& newCoordinates) {
@@ -36,13 +82,20 @@ namespace WeightsComputation {
 
 		newCoordinates.resize(neighbors.size(), 3);
 
-		Mesh submesh = mesh.getSubMesh(neighbors);
-		spectralEmbedding(submesh, &embeddedCoords[0]);
+		try {
 
-		for (size_t i = 0; i < neighbors.size(); ++i) {
-			newCoordinates(i, 0) = embeddedCoords[i].x;
-			newCoordinates(i, 1) = embeddedCoords[i].y;
-			newCoordinates(i, 2) = embeddedCoords[i].z;
+			Mesh submesh = mesh.getSubMesh(neighbors);
+			spectralEmbedding(submesh, &embeddedCoords[0]);
+
+			for (size_t i = 0; i < neighbors.size(); ++i) {
+				newCoordinates(i, 0) = embeddedCoords[i].x;
+				newCoordinates(i, 1) = embeddedCoords[i].y;
+				newCoordinates(i, 2) = embeddedCoords[i].z;
+			}
+
+		} catch (std::exception& e) {
+			std::ofstream f("d:\\tmp\\weight_exception");
+			f << e.what();
 		}
 
 	}
@@ -71,6 +124,8 @@ void computeMeshWeights(const Mesh& mesh, int depth, process_neighbors_f op, spa
 
 		// apply processing on the neighbors coordinates
 		op(mesh, neighbors, newCoordinates);
+
+		//exit(0);
 
 		// build the equation set to compute the weights
 
