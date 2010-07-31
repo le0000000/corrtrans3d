@@ -1,4 +1,4 @@
-function model = volume_correction(model, volumes, opposites, depth, rounds)
+function model = volume_correction(model, volumes, opposites, angles, depth, rounds)
 % Applies volume correction on the given model using the following method:
 % for each vertex a measure of volume is provided; also provided is an
 % opposing vertex for each vertex in the model. The basic idea is that each
@@ -12,7 +12,7 @@ function model = volume_correction(model, volumes, opposites, depth, rounds)
 % half-way to be exactly Vi away from i.
 
 % this is applied to the force we calculate
-force_const = 0.01;
+force_const = 0.3;
 
 % normalize initial model
 model = normalizeMesh01(model);
@@ -25,6 +25,8 @@ vertex_adj = build_vertex_adj(model);
 disp('Applying force iteratively');
 for r=1:rounds
     forces = zeros(n,3);
+    % applicants(i) is the number of vertices applying force to i
+    applicants = zeros(n,1);
     
     %disp('Calculating distances');
     distances = zeros(n);
@@ -53,22 +55,34 @@ for r=1:rounds
                 continue;
             end
             
-            % where neighbour_idx should be
-            i_to_neighbour_idx = model.vertices(neighbour_idx,:) - model.vertices(i,:);
-            
+
             should_be = model.vertices(i,:) + (i_to_neighbour_idx ./ norm(i_to_neighbour_idx)) * volumes(i);
+            
             forces(neighbour_idx,:) = forces(neighbour_idx,:) + ((should_be - model.vertices(neighbour_idx,:)) ./ 2);
+            applicants(neighbour_idx) = applicants(neighbour_idx) + 1;
         end % opposing neighbours loop
     end % vertices loop
     
     % apply forces and normalize
+    % but first normalize the force by number of applicants
+    
+    for i=1:n
+        if (applicants(i) ~= 0) % some vertices don't apply force
+            forces(i,:) = forces(i,:) ./ applicants(i);
+        end
+    end
+    
     model.vertices = model.vertices + (forces .* force_const);
     model = normalizeMesh01(model);
     
-    %mesh_show(model);
-    %pause;
+    mesh_show(model);
+    pause;
     
 end % rounds loop
+
+
+
+
 
 
 
