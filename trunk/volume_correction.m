@@ -75,8 +75,8 @@ for r=1:rounds
     model.vertices = model.vertices + (forces .* force_const);
     model = normalizeMesh01(model);
     
-    mesh_show(model);
-    pause;
+%     mesh_show(model);
+%     pause;
     
 end % rounds loop
 
