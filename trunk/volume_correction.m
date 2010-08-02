@@ -1,4 +1,4 @@
-function model = volume_correction(model, volumes, opposites, angles, depth, rounds)
+function model = volume_correction(model, volumes, opposites, depth, rounds)
 % Applies volume correction on the given model using the following method:
 % for each vertex a measure of volume is provided; also provided is an
 % opposing vertex for each vertex in the model. The basic idea is that each
